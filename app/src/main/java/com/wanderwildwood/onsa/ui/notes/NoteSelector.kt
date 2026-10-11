@@ -138,7 +138,8 @@ private fun NoteSelectorBase(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             state = state,
             flingBehavior = rememberSnapFlingBehavior(lazyListState = state),
-            content = content
+            isScrollbarVisible = false,
+            content = content,
         )
     }
 }

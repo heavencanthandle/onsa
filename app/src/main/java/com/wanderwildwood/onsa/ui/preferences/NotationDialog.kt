@@ -86,8 +86,8 @@ fun NotationDialog(
         text = {
             var isNotationExpanded by remember { mutableStateOf(false) }
             var isOctaveNotationExpanded by remember { mutableStateOf(false) }
-            // Paged, not scrolled: MMD's list steps and stops, and brings its own rail.
-            LazyColumnMMD(modifier = Modifier.heightIn(max = 420.dp)) {
+            // Paged, not scrolled: MMD's list steps and stops, with its scrollbar turned off.
+            LazyColumnMMD(modifier = Modifier.heightIn(max = 420.dp), isScrollbarVisible = false) {
                 item {
                     ExposedDropdownMenuBox(
                         expanded = isNotationExpanded,

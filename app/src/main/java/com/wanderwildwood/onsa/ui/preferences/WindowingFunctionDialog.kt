@@ -71,8 +71,8 @@ fun WindowingFunctionDialog(
             TextMMD(stringResource(id = R.string.windowing_function))
         },
         text = {
-            // Paged, not scrolled: MMD's list steps and stops, and brings its own rail.
-            LazyColumnMMD(modifier = Modifier.heightIn(max = 420.dp)) {
+            // Paged, not scrolled: MMD's list steps and stops, with its scrollbar turned off.
+            LazyColumnMMD(modifier = Modifier.heightIn(max = 420.dp), isScrollbarVisible = false) {
                 item {
                     Column(Modifier.selectableGroup()) {
                         for (w in WindowingFunction.entries) {

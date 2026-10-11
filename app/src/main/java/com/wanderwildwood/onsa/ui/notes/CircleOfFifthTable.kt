@@ -154,7 +154,8 @@ fun CircleOfFifthTable(
         modifier = modifier,
         verticalAlignment = Alignment.Bottom,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(horizontal = horizontalContentPadding)
+        contentPadding = PaddingValues(horizontal = horizontalContentPadding),
+        isScrollbarVisible = false,
     ) {
         if (fifthArray.isNotEmpty()) {
             fifthArray.forEach { fifth ->

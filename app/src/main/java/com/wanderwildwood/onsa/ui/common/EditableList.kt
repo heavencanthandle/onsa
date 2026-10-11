@@ -464,7 +464,8 @@ fun <T>EditableList(
     LazyColumnMMD(
         modifier = modifier.imePadding(),
         contentPadding = contentPadding,
-        state = state.lazyListState
+        state = state.lazyListState,
+        isScrollbarVisible = false,
     ) {
         val showSections = (
                 (editableItems.size + state.numNonEmptyPredefinedLists) > 1 ||

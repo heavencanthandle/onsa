@@ -76,7 +76,8 @@ fun CentAndRatioTable(
 
     LazyRowMMD(
         modifier = modifier,
-        contentPadding = PaddingValues(horizontal = horizontalContentPadding)
+        contentPadding = PaddingValues(horizontal = horizontalContentPadding),
+        isScrollbarVisible = false,
     ) {
         items(temperament.size + 1) {
             //val note = musicalScale.noteNameScale.getNoteOfIndex(rootNoteIndex + it)

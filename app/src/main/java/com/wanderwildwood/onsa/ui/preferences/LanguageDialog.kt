@@ -58,8 +58,8 @@ fun LanguageDialog(
                 } ?: LanguageSelections.SystemDefault
             }
 
-            // Paged, not scrolled: MMD's list steps and stops, and brings its own rail.
-            LazyColumnMMD(modifier = Modifier.heightIn(max = 420.dp).selectableGroup()) {
+            // Paged, not scrolled: MMD's list steps and stops, with its scrollbar turned off.
+            LazyColumnMMD(modifier = Modifier.heightIn(max = 420.dp).selectableGroup(), isScrollbarVisible = false) {
                 item {
     //                Log.v("Tuner", "Languagedialog: As is: tag=${AppCompatDelegate.getApplicationLocales()[0]?.toLanguageTag()}, ${AppCompatDelegate.getApplicationLocales()[0]?.language}, ${AppCompatDelegate.getApplicationLocales()[0]?.variant}")
                     LanguageSelections.entries.forEach {

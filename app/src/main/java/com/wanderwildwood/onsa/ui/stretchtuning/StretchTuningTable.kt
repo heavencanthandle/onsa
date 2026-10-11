@@ -76,7 +76,8 @@ fun StretchTuningTable(
 
         LazyColumnMMD(
             contentPadding = contentPadding,
-            state = lazyListState
+            state = lazyListState,
+            isScrollbarVisible = false,
         ) {
             items(
                 stretchTuningData.size,

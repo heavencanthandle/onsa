@@ -118,7 +118,8 @@ fun TemperamentEditor(
     ) { paddingValues ->
         LazyColumnMMD(
             modifier = modifier.imePadding().consumeWindowInsets(paddingValues),
-            contentPadding = paddingValues
+            contentPadding = paddingValues,
+            isScrollbarVisible = false,
         ) {
             item {
                 TextFieldMMD(

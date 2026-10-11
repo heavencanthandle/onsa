@@ -89,7 +89,8 @@ fun Preferences(
     ) { paddingValues ->
         LazyColumnMMD(
             modifier = Modifier.consumeWindowInsets(paddingValues),
-            contentPadding = paddingValues
+            contentPadding = paddingValues,
+            isScrollbarVisible = false,
         ) {
             item {
                 Section(

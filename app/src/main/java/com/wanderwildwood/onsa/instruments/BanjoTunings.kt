@@ -151,3 +151,35 @@ private fun note(
     octave: Int,
     modifier: NoteModifier = NoteModifier.None
 ): MusicalNote = MusicalNote(base = base, modifier = modifier, octave = octave)
+
+/** A blank custom tuning, starting from Open G, ready for the editor. */
+fun newBanjoTuningDraft(): Instrument {
+    val openG = banjoTunings.first()
+    return openG.copy(
+        name = "",
+        nameResource = null,
+        stableId = Instrument.NO_STABLE_ID
+    )
+}
+
+/** Semitone height used to place a string on the editor. Higher is a higher pitch. */
+fun MusicalNote.chromaticPitch(): Int {
+    val semitone = when (base) {
+        BaseNote.C -> 0
+        BaseNote.D -> 2
+        BaseNote.E -> 4
+        BaseNote.F -> 5
+        BaseNote.G -> 7
+        BaseNote.A -> 9
+        BaseNote.B -> 11
+        BaseNote.None -> 0
+    }
+    val alter = when (modifier) {
+        NoteModifier.Sharp -> 1
+        NoteModifier.Flat -> -1
+        NoteModifier.SharpSharp -> 2
+        NoteModifier.FlatFlat -> -2
+        else -> 0
+    }
+    return octave * 12 + semitone + alter
+}

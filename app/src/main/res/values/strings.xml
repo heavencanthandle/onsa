@@ -75,6 +75,9 @@
     <string name="banjo_d_minor">D minor</string>
     <string name="banjo_double_d">Double D</string>
     <string name="banjo_open_a">Open A</string>
+    <string name="banjo_select_note">Select note</string>
+    <string name="banjo_delete_instrument">Delete this instrument?</string>
+    <string name="cd_confirm">confirm</string>
     <string name="c_note_name">C</string>
     <string name="d_note_name">D</string>
     <string name="e_note_name">E</string>

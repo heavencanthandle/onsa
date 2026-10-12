@@ -38,6 +38,7 @@ import com.wanderwildwood.onsa.instruments.Instrument
 import com.wanderwildwood.onsa.instruments.InstrumentIcon
 import com.wanderwildwood.onsa.instruments.banjoTunings
 import com.wanderwildwood.onsa.instruments.isBanjoTuningMenu
+import com.wanderwildwood.onsa.instruments.newBanjoTuningDraft
 import com.wanderwildwood.onsa.musicalscale.MusicalScale2
 import com.wanderwildwood.onsa.notenames.MusicalNote
 import com.wanderwildwood.onsa.preferences.PreferenceResources
@@ -202,13 +203,33 @@ fun NavGraphBuilder.mainGraph(
         val notePrintOptions by preferences.notePrintOptions.collectAsStateWithLifecycle()
         val viewModel: InstrumentViewModel = hiltViewModel()
         val currentInstrument by viewModel.instruments.currentInstrument.collectAsStateWithLifecycle()
+        val customBanjoTunings by viewModel.instruments.customBanjoTunings.collectAsStateWithLifecycle()
+        val context = LocalContext.current
         BanjoTuningsScreen(
-            tunings = banjoTunings,
+            tunings = banjoTunings + customBanjoTunings,
             currentInstrument = currentInstrument,
             notePrintOptions = notePrintOptions,
             onTuningClicked = { tuning ->
                 viewModel.setCurrentInstrument(tuning)
                 controller.popBackStack(TunerRoute, inclusive = false)
+            },
+            onCreateTuningClicked = {
+                controller.navigate(BanjoTuningEditorGraphRoute.create(newBanjoTuningDraft()))
+            },
+            onEditTuningClicked = { tuning ->
+                val draft = if (tuning.isPredefined()) {
+                    tuning.copy(
+                        name = tuning.getNameString(context),
+                        nameResource = null,
+                        stableId = Instrument.NO_STABLE_ID
+                    )
+                } else {
+                    tuning
+                }
+                controller.navigate(BanjoTuningEditorGraphRoute.create(draft))
+            },
+            onDeleteTuningClicked = { tuning ->
+                viewModel.instruments.deleteCustomBanjoTuning(tuning.stableId)
             },
             onNavigateUpClicked = { controller.navigateUp() },
             modifier = Modifier.fillMaxSize()

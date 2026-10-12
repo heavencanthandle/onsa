@@ -19,11 +19,23 @@
 package com.wanderwildwood.onsa.ui.instruments
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
+import com.mudita.mmd.components.buttons.FloatingActionButtonMMD
+import com.mudita.mmd.components.buttons.OutlinedButtonMMD
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -39,6 +51,7 @@ import com.wanderwildwood.onsa.instruments.Instrument
 import com.wanderwildwood.onsa.ui.common.EditableListItem
 import com.wanderwildwood.onsa.ui.misc.TunerScaffoldWithoutBottomBar
 import com.wanderwildwood.onsa.ui.notes.NotePrintOptions2
+import com.wanderwildwood.onsa.ui.theme.EInkAlertDialog
 
 @Composable
 fun BanjoTuningsScreen(
@@ -46,21 +59,41 @@ fun BanjoTuningsScreen(
     currentInstrument: Instrument?,
     notePrintOptions: NotePrintOptions2,
     onTuningClicked: (Instrument) -> Unit,
+    onCreateTuningClicked: () -> Unit,
+    onEditTuningClicked: (Instrument) -> Unit,
+    onDeleteTuningClicked: (Instrument) -> Unit,
     onNavigateUpClicked: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val activeName = currentInstrument?.getNameString(null)
+    var pendingDelete by remember { mutableStateOf<Instrument?>(null) }
+    // One row, so the last pencil can scroll clear of the new-instrument button.
+    val rowHeight = 72.dp
 
     TunerScaffoldWithoutBottomBar(
         modifier = modifier,
         title = stringResource(R.string.banjo_tunings),
         showPreferenceButton = false,
         onNavigateUpClicked = onNavigateUpClicked,
+        floatingActionButton = {
+            FloatingActionButtonMMD(onClick = onCreateTuningClicked) {
+                Icon(
+                    painter = painterResource(R.drawable.add_24px),
+                    contentDescription = stringResource(R.string.cd_create_new_instrument)
+                )
+            }
+        }
     ) { paddingValues ->
+        val layoutDirection = LocalLayoutDirection.current
         LazyColumnMMD(
             modifier = Modifier.consumeWindowInsets(paddingValues),
-            contentPadding = paddingValues,
+            contentPadding = PaddingValues(
+                start = paddingValues.calculateStartPadding(layoutDirection),
+                top = paddingValues.calculateTopPadding(),
+                end = paddingValues.calculateEndPadding(layoutDirection),
+                bottom = paddingValues.calculateBottomPadding() + rowHeight
+            ),
             isScrollbarVisible = false,
         ) {
             items(tunings.size) { index ->
@@ -100,9 +133,36 @@ fun BanjoTuningsScreen(
                     isActive = tuning.getNameString(null) == activeName,
                     readOnly = true,
                     isCopyable = false,
-                    hasInfo = false
+                    hasInfo = false,
+                    onEditClicked = { onEditTuningClicked(tuning) },
+                    onDeleteClicked = if (tuning.isPredefined()) {
+                        null
+                    } else {
+                        { pendingDelete = tuning }
+                    }
                 )
             }
+        }
+        pendingDelete?.let { tuning ->
+            EInkAlertDialog(
+                onDismissRequest = { pendingDelete = null },
+                title = { TextMMD(stringResource(R.string.banjo_delete_instrument)) },
+                confirmButton = {
+                    OutlinedButtonMMD(
+                        onClick = {
+                            pendingDelete = null
+                            onDeleteTuningClicked(tuning)
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { TextMMD(stringResource(R.string.yes)) }
+                },
+                dismissButton = {
+                    OutlinedButtonMMD(
+                        onClick = { pendingDelete = null },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { TextMMD(stringResource(R.string.no)) }
+                }
+            )
         }
     }
 }

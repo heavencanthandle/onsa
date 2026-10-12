@@ -50,6 +50,7 @@ import com.wanderwildwood.onsa.navigation.InstrumentsRoute
 import com.wanderwildwood.onsa.navigation.StretchTuningOverviewRoute
 import com.wanderwildwood.onsa.navigation.TemperamentDialogRoute
 import com.wanderwildwood.onsa.navigation.TunerRoute
+import com.wanderwildwood.onsa.navigation.banjoTuningEditorGraph
 import com.wanderwildwood.onsa.navigation.instrumentEditorGraph
 import com.wanderwildwood.onsa.navigation.preferenceGraph
 import com.wanderwildwood.onsa.navigation.mainGraph
@@ -199,6 +200,12 @@ class MainActivity : AppCompatActivity() {// ComponentActivity() {
                     )
 
                     instrumentEditorGraph(
+                        controller = controller,
+                        preferences = pref,
+                        instruments = instruments,
+                        temperaments = temperaments
+                    )
+                    banjoTuningEditorGraph(
                         controller = controller,
                         preferences = pref,
                         instruments = instruments,

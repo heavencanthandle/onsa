@@ -95,7 +95,9 @@ fun EditableListItem(
     isSelected: Boolean = false,
     readOnly: Boolean = false, // disable delete/edit options
     isCopyable: Boolean = true, // disable copy-option
-    hasInfo: Boolean = false
+    hasInfo: Boolean = false,
+    onEditClicked: (() -> Unit)? = null,
+    onDeleteClicked: (() -> Unit)? = null
 ) {
     val variantColor = if (isActive)
         MaterialTheme.colorScheme.onSecondaryContainer
@@ -151,7 +153,31 @@ fun EditableListItem(
             }
             Box {
                 val numOptions = numMenuOptions(readOnly, isCopyable, hasInfo)
-                if (numOptions == 1 && isCopyable) {
+                if (onEditClicked != null || onDeleteClicked != null) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (onDeleteClicked != null) {
+                            IconButton(onClick = onDeleteClicked) {
+                                Icon(
+                                    painter = painterResource(R.drawable.delete_24px),
+                                    contentDescription = stringResource(R.string.cd_delete),
+                                    tint = variantColor
+                                )
+                            }
+                        }
+                        if (onEditClicked != null) {
+                            IconButton(
+                                onClick = onEditClicked,
+                                modifier = Modifier.padding(end = 8.dp),
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.edit_24px),
+                                    contentDescription = stringResource(R.string.cd_edit),
+                                    tint = variantColor
+                                )
+                            }
+                        }
+                    }
+                } else if (numOptions == 1 && isCopyable) {
                     IconButton(
                         onClick = { onOptionsClicked(ListItemTask.Copy) },
                         modifier = Modifier.padding(horizontal = 16.dp),

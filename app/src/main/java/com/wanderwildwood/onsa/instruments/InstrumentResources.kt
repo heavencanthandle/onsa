@@ -105,11 +105,49 @@ class InstrumentResources @Inject constructor(
         writeCustomInstruments(newInstrumentList)
     }
 
+    private val customBanjoTuningsPref = createTransformablePreference(
+        "custom banjo tunings", persistentListOf<Instrument>(),
+        { it.toTypedArray() }, { it.toPersistentList() }
+    )
+    val customBanjoTunings = customBanjoTuningsPref.asStateFlow()
+
+    fun saveCustomBanjoTuning(instrument: Instrument) {
+        val stored = if (instrument.stableId == Instrument.NO_STABLE_ID)
+            instrument.copy(stableId = getNewStableId())
+        else
+            instrument
+        val updated = customBanjoTunings.value.mutate { mutated ->
+            val index = mutated.indexOfFirst { it.stableId == stored.stableId }
+            if (index >= 0)
+                mutated[index] = stored
+            else
+                mutated.add(stored)
+        }
+        customBanjoTuningsPref.set(updated)
+        if (currentInstrument.value.stableId == stored.stableId)
+            writeCurrentInstrument(stored)
+    }
+
+    fun deleteCustomBanjoTuning(stableId: Long) {
+        val updated = customBanjoTunings.value.mutate { mutated ->
+            val index = mutated.indexOfFirst { it.stableId == stableId }
+            if (index >= 0)
+                mutated.removeAt(index)
+        }
+        customBanjoTuningsPref.set(updated)
+        if (currentInstrument.value.stableId == stableId && banjoTunings.isNotEmpty())
+            writeCurrentInstrument(banjoTunings.first())
+    }
+
     private fun getNewStableId(existingInstruments: List<Instrument> = customInstruments.value): Long {
         val currentKey = currentInstrument.value.stableId
+        val banjoIds = customBanjoTunings.value
         while (true) {
             val stableId = Random.nextLong(0, Long.MAX_VALUE - 1)
-            if ((currentKey != stableId) && (existingInstruments.firstOrNull {it.stableId == stableId} == null))
+            val taken = stableId == currentKey ||
+                existingInstruments.any { it.stableId == stableId } ||
+                banjoIds.any { it.stableId == stableId }
+            if (!taken)
                 return stableId
         }
     }

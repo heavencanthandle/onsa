@@ -8,6 +8,23 @@ and the screen stays awake while you play.
 Built for the [Mudita Kompakt](https://mudita.com/products/kompakt/), whose 4.3" panel has
 sixteen greys, a slow redraw, and is read at arm's length on a music stand.
 
+## This fork
+
+This is a fork of [wanderwildwood/onsa](https://github.com/wanderwildwood/onsa). The app
+below is unchanged: a black-and-white tuner for an E Ink phone. The addition is a
+**5-string banjo**, shared here so it can be looked at before any pull request.
+
+The instrument list has one banjo row. It opens a list of tunings — Open G, G minor,
+Sawmill, Double C, Open C, Drop C, C minor, Open D, D minor, Double D, and Open A.
+Notes are written 5th string through 1st, at sounding pitch. The short 5th string is
+often the highest note and sits next to the low 4th string.
+
+The pencil on a built-in tuning saves a new one and leaves the original alone. On a
+tuning you made, the pencil updates that tuning, unless the name is changed, which
+saves another and keeps the old one. The trash icon asks before it deletes. In the
+editor the five strings are drawn side by side, a higher note higher on the screen.
+Tap a note, put a ring on the replacement, and confirm it with the check mark.
+
 ## Screenshots
 
 | | | | |

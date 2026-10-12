@@ -129,6 +129,8 @@ private fun reloadPredefinedInstrumentIfNeeded(
     } else {
         predefinedInstruments.firstOrNull {
             it.getNameString(null) == name
+        } ?: banjoTunings.firstOrNull {
+            it.getNameString(null) == name
         } ?: instrument
     }
 }

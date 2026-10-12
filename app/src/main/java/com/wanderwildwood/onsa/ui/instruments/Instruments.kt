@@ -55,6 +55,7 @@ import com.wanderwildwood.onsa.R
 import com.wanderwildwood.onsa.instruments.Instrument
 import com.wanderwildwood.onsa.instruments.InstrumentIO
 import com.wanderwildwood.onsa.instruments.InstrumentIcon
+import com.wanderwildwood.onsa.instruments.isBanjoTuningMenu
 import com.wanderwildwood.onsa.misc.ShareData
 import com.wanderwildwood.onsa.misc.getFilenameFromUri
 import com.wanderwildwood.onsa.misc.toastPotentialFileCheckError
@@ -258,20 +259,28 @@ fun Instruments(
                     overflow = TextOverflow.Ellipsis
                 ) },
                 description = {
-                    val style = LocalTextStyle.current
-                    val stringsString = remember(context, style, item, notePrintOptions) {
-                        item.getStringsString(
-                            context = context,
-                            notePrintOptions = notePrintOptions,
-                            fontSize = style.fontSize,
-                            fontWeight = style.fontWeight
+                    if (item.isBanjoTuningMenu()) {
+                        TextMMD(
+                            stringResource(R.string.banjo_several_tunings),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    } else {
+                        val style = LocalTextStyle.current
+                        val stringsString = remember(context, style, item, notePrintOptions) {
+                            item.getStringsString(
+                                context = context,
+                                notePrintOptions = notePrintOptions,
+                                fontSize = style.fontSize,
+                                fontWeight = style.fontWeight
+                            )
+                        }
+                        TextMMD(
+                            stringsString,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
-                    TextMMD(
-                        stringsString,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
                 },
                 icon = {
                     Icon(
@@ -294,7 +303,7 @@ fun Instruments(
                 isActive = itemInfo.isActive,
                 isSelected = itemInfo.isSelected,
                 readOnly = itemInfo.readOnly,
-                isCopyable = !item.isChromatic,
+                isCopyable = !item.isChromatic && !item.isBanjoTuningMenu(),
                 hasInfo = false
             )
         }

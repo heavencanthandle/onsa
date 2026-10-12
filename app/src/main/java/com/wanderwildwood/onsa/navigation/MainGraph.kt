@@ -36,6 +36,8 @@ import androidx.navigation.toRoute
 import com.wanderwildwood.onsa.R
 import com.wanderwildwood.onsa.instruments.Instrument
 import com.wanderwildwood.onsa.instruments.InstrumentIcon
+import com.wanderwildwood.onsa.instruments.banjoTunings
+import com.wanderwildwood.onsa.instruments.isBanjoTuningMenu
 import com.wanderwildwood.onsa.musicalscale.MusicalScale2
 import com.wanderwildwood.onsa.notenames.MusicalNote
 import com.wanderwildwood.onsa.preferences.PreferenceResources
@@ -43,6 +45,7 @@ import com.wanderwildwood.onsa.temperaments.EditableTemperament
 import com.wanderwildwood.onsa.temperaments.Temperament3
 import com.wanderwildwood.onsa.temperaments.TemperamentResources
 import com.wanderwildwood.onsa.temperaments.toEditableTemperament
+import com.wanderwildwood.onsa.ui.instruments.BanjoTuningsScreen
 import com.wanderwildwood.onsa.ui.instruments.Instruments
 import com.wanderwildwood.onsa.ui.preferences.ReferenceNoteDialog
 import com.wanderwildwood.onsa.ui.preferences.RootNoteDialog
@@ -149,8 +152,12 @@ fun NavGraphBuilder.mainGraph(
 //            musicalScale = musicalScale,
             onNavigateUpClicked = { controller.navigateUp() },
             onInstrumentClicked = {
-                viewModel.setCurrentInstrument(it)
-                controller.navigateUp()
+                if (it.isBanjoTuningMenu()) {
+                    controller.navigate(BanjoTuningsRoute)
+                } else {
+                    viewModel.setCurrentInstrument(it)
+                    controller.navigateUp()
+                }
             },
             onEditInstrumentClicked = { instrument, copy ->
                 val newInstrument = if (copy) {
@@ -188,6 +195,23 @@ fun NavGraphBuilder.mainGraph(
 //            onTemperamentClicked = { controller.navigate(TemperamentDialogRoute) },
             onPreferenceButtonClicked = { controller.navigate(PreferencesGraphRoute) },
             onLoadInstruments = onLoadInstruments
+        )
+    }
+
+    composable<BanjoTuningsRoute> {
+        val notePrintOptions by preferences.notePrintOptions.collectAsStateWithLifecycle()
+        val viewModel: InstrumentViewModel = hiltViewModel()
+        val currentInstrument by viewModel.instruments.currentInstrument.collectAsStateWithLifecycle()
+        BanjoTuningsScreen(
+            tunings = banjoTunings,
+            currentInstrument = currentInstrument,
+            notePrintOptions = notePrintOptions,
+            onTuningClicked = { tuning ->
+                viewModel.setCurrentInstrument(tuning)
+                controller.popBackStack(TunerRoute, inclusive = false)
+            },
+            onNavigateUpClicked = { controller.navigateUp() },
+            modifier = Modifier.fillMaxSize()
         )
     }
 
@@ -366,6 +390,9 @@ data object TunerRoute
 
 @Serializable
 data object InstrumentsRoute
+
+@Serializable
+data object BanjoTuningsRoute
 
 // it seems that we cannot use complex arguments, so we must serialize ...
 @Serializable

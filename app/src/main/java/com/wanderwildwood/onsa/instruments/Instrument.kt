@@ -276,6 +276,11 @@ private fun createInstrumentDatabase(): ArrayList<Instrument> {
             stableId = -1 - instruments.size.toLong()
         )
     )
+    // Appended so the stable ids above stay put. This row opens the tuning
+    // list; the tunings themselves are not database entries.
+    instruments.add(
+        banjoMenuInstrument(stableId = -1 - instruments.size.toLong())
+    )
 //    instruments.add(
 //        Instrument(
 //            name = "Test instrument",

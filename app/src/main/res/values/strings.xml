@@ -111,6 +111,9 @@
     <string name="abort">Abort</string>
     <string name="instrument_name">Instrument name</string>
     <string name="add_note">Add note</string>
+    <string name="instrument_strings">Strings</string>
+    <string name="add_string_high">Add string high</string>
+    <string name="add_string_low">Add string low</string>
     <string name="delete_note">Delete note</string>
     <string name="lately_detected_notes">Lately detected tones</string>
     <string name="done">Done</string>

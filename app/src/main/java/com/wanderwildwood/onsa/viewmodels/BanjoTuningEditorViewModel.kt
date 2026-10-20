@@ -25,6 +25,9 @@ import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import com.wanderwildwood.onsa.instruments.Instrument
 import com.wanderwildwood.onsa.instruments.InstrumentIcon
+import com.wanderwildwood.onsa.instruments.withHighString
+import com.wanderwildwood.onsa.instruments.withLowString
+import com.wanderwildwood.onsa.instruments.withStringRemoved
 import com.wanderwildwood.onsa.notenames.BaseNote
 import com.wanderwildwood.onsa.notenames.MusicalNote
 import com.wanderwildwood.onsa.notenames.NoteModifier
@@ -67,6 +70,18 @@ class BanjoTuningEditorViewModel @AssistedInject constructor(
         val current = strings.value
         if (editingStringIndex !in current.indices) return
         strings.value = current.toMutableList().also { it[editingStringIndex] = pendingNote.value }
+    }
+
+    fun addHighString() {
+        strings.value = strings.value.withHighString()
+    }
+
+    fun addLowString() {
+        strings.value = strings.value.withLowString()
+    }
+
+    fun deleteString(index: Int) {
+        strings.value = strings.value.withStringRemoved(index)
     }
 
     fun toInstrument(): Instrument {

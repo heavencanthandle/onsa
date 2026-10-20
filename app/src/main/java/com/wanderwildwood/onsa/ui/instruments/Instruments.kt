@@ -28,13 +28,16 @@ import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -48,6 +51,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mudita.mmd.components.buttons.FloatingActionButtonMMD
+import com.mudita.mmd.components.buttons.OutlinedButtonMMD
 import com.mudita.mmd.components.snackbar.SnackbarHostMMD
 import com.mudita.mmd.components.snackbar.SnackbarHostStateMMD
 import com.mudita.mmd.components.text.TextMMD
@@ -72,6 +76,7 @@ import com.wanderwildwood.onsa.ui.common.OverflowMenuCallbacks
 import com.wanderwildwood.onsa.ui.misc.TunerScaffoldWithoutBottomBar
 import com.wanderwildwood.onsa.ui.notes.NotePrintOptions
 import com.wanderwildwood.onsa.ui.notes.NotePrintOptions2
+import com.wanderwildwood.onsa.ui.theme.EInkAlertDialog
 import com.wanderwildwood.onsa.ui.theme.TunerTheme
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentSetOf
@@ -142,6 +147,8 @@ fun Instruments(
             }
         }
     }
+
+    var pendingDelete by remember { mutableStateOf<Instrument?>(null) }
 
     val overflowCallbacks = object: OverflowMenuCallbacks {
         override fun onDeleteClicked() {
@@ -303,8 +310,39 @@ fun Instruments(
                 isActive = itemInfo.isActive,
                 isSelected = itemInfo.isSelected,
                 readOnly = itemInfo.readOnly,
-                isCopyable = !item.isChromatic && !item.isBanjoTuningMenu(),
-                hasInfo = false
+                isCopyable = false,
+                hasInfo = false,
+                onEditClicked = if (item.isChromatic || item.isBanjoTuningMenu()) {
+                    null
+                } else {
+                    { onEditInstrumentClicked(item, itemInfo.readOnly) }
+                },
+                onDeleteClicked = if (itemInfo.readOnly || item.isChromatic || item.isBanjoTuningMenu()) {
+                    null
+                } else {
+                    { pendingDelete = item }
+                }
+            )
+        }
+        pendingDelete?.let { instrument ->
+            EInkAlertDialog(
+                onDismissRequest = { pendingDelete = null },
+                title = { TextMMD(stringResource(R.string.banjo_delete_instrument)) },
+                confirmButton = {
+                    OutlinedButtonMMD(
+                        onClick = {
+                            pendingDelete = null
+                            state.listData.deleteItems(persistentSetOf(instrument.stableId))
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { TextMMD(stringResource(R.string.yes)) }
+                },
+                dismissButton = {
+                    OutlinedButtonMMD(
+                        onClick = { pendingDelete = null },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { TextMMD(stringResource(R.string.no)) }
+                }
             )
         }
 

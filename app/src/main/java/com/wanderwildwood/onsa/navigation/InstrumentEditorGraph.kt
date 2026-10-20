@@ -18,11 +18,12 @@
 */
 package com.wanderwildwood.onsa.navigation
 
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
@@ -31,21 +32,23 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.dialog
 import androidx.navigation.navigation
 import androidx.navigation.toRoute
-import com.mudita.mmd.components.snackbar.SnackbarHostStateMMD
 import com.wanderwildwood.onsa.instruments.Instrument
 import com.wanderwildwood.onsa.instruments.InstrumentResources
 import com.wanderwildwood.onsa.preferences.PreferenceResources
 import com.wanderwildwood.onsa.temperaments.TemperamentResources
+import com.wanderwildwood.onsa.ui.instruments.BanjoNotePicker
 import com.wanderwildwood.onsa.ui.instruments.InstrumentEditor
 import com.wanderwildwood.onsa.ui.instruments.InstrumentIconPicker
-import com.wanderwildwood.onsa.ui.misc.rememberTunerAudioPermission
+import com.wanderwildwood.onsa.ui.instruments.StringSettingsScreen
 import com.wanderwildwood.onsa.viewmodels.InstrumentEditorViewModel
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 @Composable
-private fun createStretchTuningEditorViewModel(controller: NavController, backStackEntry: NavBackStackEntry)
-: InstrumentEditorViewModel {
+private fun editorViewModel(
+    controller: NavController,
+    backStackEntry: NavBackStackEntry
+): InstrumentEditorViewModel {
     val parentEntry = remember(backStackEntry) {
         controller.getBackStackEntry<InstrumentEditorGraphRoute>()
     }
@@ -67,35 +70,65 @@ fun NavGraphBuilder.instrumentEditorGraph(
         startDestination = InstrumentEditorRoute
     ) {
         composable<InstrumentEditorRoute> {
-            val viewModel = createStretchTuningEditorViewModel(controller = controller, backStackEntry = it)
-
-            val musicalScale by temperaments.musicalScale.collectAsStateWithLifecycle()
+            val viewModel = editorViewModel(controller, it)
             val notePrintOptions by preferences.notePrintOptions.collectAsStateWithLifecycle()
-
-            val snackbarHostState = remember { SnackbarHostStateMMD() }
-            val permissionGranted = rememberTunerAudioPermission(snackbarHostState)
-
-            LifecycleResumeEffect(permissionGranted) {
-                if (permissionGranted)
-                    viewModel.startTuner()
-                onPauseOrDispose { viewModel.stopTuner() }
-            }
             InstrumentEditor(
                 state = viewModel,
-                musicalScale = musicalScale,
                 notePrintOptions = notePrintOptions,
-                onIconButtonClicked = { controller.navigate(IconPickerRoute) },
                 onNavigateUpClicked = { controller.navigateUp() },
-                onSaveNewInstrumentClicked = {
-                    val newInstrument = viewModel.getInstrument()
-                    instruments.addNewOrReplaceInstrument(newInstrument)
+                onSaveClicked = {
+                    instruments.addNewOrReplaceInstrument(viewModel.toInstrument())
                     controller.navigateUp()
                 },
-                snackbarHostState = snackbarHostState
+                onStringClicked = { index ->
+                    viewModel.beginEditingString(index)
+                    controller.navigate(InstrumentNotePickerRoute)
+                },
+                onSettingsClicked = { controller.navigate(InstrumentStringSettingsRoute) },
+                onIconClicked = { controller.navigate(IconPickerRoute) },
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+        composable<InstrumentNotePickerRoute> {
+            val viewModel = editorViewModel(controller, it)
+            val notePrintOptions by preferences.notePrintOptions.collectAsStateWithLifecycle()
+            val musicalScale by temperaments.musicalScale.collectAsStateWithLifecycle()
+            val pendingNote by viewModel.pendingNote.collectAsStateWithLifecycle()
+            BanjoNotePicker(
+                scale = musicalScale,
+                pendingNote = pendingNote,
+                notePrintOptions = notePrintOptions,
+                onNoteClicked = { viewModel.setPendingNote(it) },
+                onConfirmClicked = {
+                    viewModel.confirmPendingNote()
+                    controller.navigateUp()
+                },
+                onNavigateUpClicked = { controller.navigateUp() },
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+        composable<InstrumentStringSettingsRoute> {
+            val viewModel = editorViewModel(controller, it)
+            val notePrintOptions by preferences.notePrintOptions.collectAsStateWithLifecycle()
+            val notes by viewModel.strings.collectAsStateWithLifecycle()
+            StringSettingsScreen(
+                notes = notes,
+                notePrintOptions = notePrintOptions,
+                onAddHighString = {
+                    viewModel.addHighString()
+                    controller.navigateUp()
+                },
+                onAddLowString = {
+                    viewModel.addLowString()
+                    controller.navigateUp()
+                },
+                onDeleteString = { viewModel.deleteString(it) },
+                onNavigateUpClicked = { controller.navigateUp() },
+                modifier = Modifier.fillMaxSize()
             )
         }
         dialog<IconPickerRoute> {
-            val viewModel = createStretchTuningEditorViewModel(controller = controller, backStackEntry = it)
+            val viewModel = editorViewModel(controller, it)
             InstrumentIconPicker(
                 onDismiss = { controller.navigateUp() },
                 onIconSelected = { icon ->
@@ -123,5 +156,9 @@ data class InstrumentEditorGraphRoute(val instrumentSerialized: String) {
 }
 @Serializable
 data object InstrumentEditorRoute
+@Serializable
+data object InstrumentNotePickerRoute
+@Serializable
+data object InstrumentStringSettingsRoute
 @Serializable
 data object IconPickerRoute

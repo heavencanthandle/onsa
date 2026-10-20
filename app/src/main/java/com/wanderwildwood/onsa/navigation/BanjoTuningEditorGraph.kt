@@ -37,6 +37,7 @@ import com.wanderwildwood.onsa.preferences.PreferenceResources
 import com.wanderwildwood.onsa.temperaments.TemperamentResources
 import com.wanderwildwood.onsa.ui.instruments.BanjoNotePicker
 import com.wanderwildwood.onsa.ui.instruments.BanjoTuningEditor
+import com.wanderwildwood.onsa.ui.instruments.StringSettingsScreen
 import com.wanderwildwood.onsa.viewmodels.BanjoTuningEditorViewModel
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -81,6 +82,27 @@ fun NavGraphBuilder.banjoTuningEditorGraph(
                     viewModel.beginEditingString(index)
                     controller.navigate(BanjoNotePickerRoute)
                 },
+                onSettingsClicked = { controller.navigate(BanjoStringSettingsRoute) },
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+        composable<BanjoStringSettingsRoute> {
+            val viewModel = editorViewModel(controller, it)
+            val notePrintOptions by preferences.notePrintOptions.collectAsStateWithLifecycle()
+            val notes by viewModel.strings.collectAsStateWithLifecycle()
+            StringSettingsScreen(
+                notes = notes,
+                notePrintOptions = notePrintOptions,
+                onAddHighString = {
+                    viewModel.addHighString()
+                    controller.navigateUp()
+                },
+                onAddLowString = {
+                    viewModel.addLowString()
+                    controller.navigateUp()
+                },
+                onDeleteString = { viewModel.deleteString(it) },
+                onNavigateUpClicked = { controller.navigateUp() },
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -121,3 +143,6 @@ data object BanjoTuningEditorRoute
 
 @Serializable
 data object BanjoNotePickerRoute
+
+@Serializable
+data object BanjoStringSettingsRoute

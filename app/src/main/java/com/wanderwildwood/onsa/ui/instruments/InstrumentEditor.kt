@@ -18,12 +18,7 @@
 */
 package com.wanderwildwood.onsa.ui.instruments
 
-import android.content.res.Configuration
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -31,328 +26,84 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.mudita.mmd.components.buttons.ButtonMMD
-import com.mudita.mmd.components.divider.HorizontalDividerMMD
-import com.mudita.mmd.components.snackbar.SnackbarHostMMD
-import com.mudita.mmd.components.snackbar.SnackbarHostStateMMD
 import com.mudita.mmd.components.text.TextMMD
 import com.mudita.mmd.components.text_field.TextFieldMMD
 import com.mudita.mmd.components.top_app_bar.TopAppBarMMD
 import com.wanderwildwood.onsa.R
-import com.wanderwildwood.onsa.instruments.InstrumentIcon
-import com.wanderwildwood.onsa.musicalscale.MusicalScale2
-import com.wanderwildwood.onsa.notedetection.TuningState
-import com.wanderwildwood.onsa.notenames.MusicalNote
-import com.wanderwildwood.onsa.ui.notes.NoteDetector
-import com.wanderwildwood.onsa.ui.notes.NoteDetectorState
-import com.wanderwildwood.onsa.ui.notes.NotePrintOptions
 import com.wanderwildwood.onsa.ui.notes.NotePrintOptions2
-import com.wanderwildwood.onsa.ui.notes.NoteSelector
-import com.wanderwildwood.onsa.ui.screens.TunerPlotStyle
-import com.wanderwildwood.onsa.ui.theme.TunerTheme
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.mutate
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlin.math.min
-
-interface InstrumentEditorData {
-    val icon: StateFlow<InstrumentIcon>
-    val name: StateFlow<String>
-
-    val strings: StateFlow<ImmutableList<StringWithInfo> >
-    val stringsState: StringsState
-
-    /// Index in strings-list of the selected string
-    val selectedStringIndex: StateFlow<Int>
-
-    val noteDetectorState: NoteDetectorState
-
-    /** Note which is used in NoteSelector, when no note is available */
-    val initializerNote: StateFlow<MusicalNote>
-
-    fun setIcon(icon: InstrumentIcon)
-    fun setName(name: String)
-
-    fun selectString(key: Int)
-    fun modifySelectedString(note: MusicalNote)
-
-    fun addNote()
-    fun deleteNote()
-}
+import com.wanderwildwood.onsa.viewmodels.InstrumentEditorViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InstrumentEditor(
-    state: InstrumentEditorData,
-    musicalScale: MusicalScale2,
+    state: InstrumentEditorViewModel,
+    notePrintOptions: NotePrintOptions2,
+    onNavigateUpClicked: () -> Unit,
+    onSaveClicked: () -> Unit,
+    onStringClicked: (Int) -> Unit,
+    onSettingsClicked: () -> Unit,
+    onIconClicked: () -> Unit,
     modifier: Modifier = Modifier,
-    notePrintOptions: NotePrintOptions2 = NotePrintOptions2(),
-    tunerPlotStyle: TunerPlotStyle = TunerPlotStyle.create(),
-    onIconButtonClicked: () -> Unit = {},
-    onNavigateUpClicked: () -> Unit = {},
-    onSaveNewInstrumentClicked: () -> Unit = {},
-    snackbarHostState: SnackbarHostStateMMD = remember { SnackbarHostStateMMD() }
 ) {
+    val name by state.name.collectAsStateWithLifecycle()
+    val notes by state.strings.collectAsStateWithLifecycle()
+    val icon by state.icon.collectAsStateWithLifecycle()
     Scaffold(
         modifier = modifier,
         topBar = {
             TopAppBarMMD(
                 title = { TextMMD(stringResource(id = R.string.edit_instrument)) },
                 navigationIcon = {
-                    IconButton(onClick = { onNavigateUpClicked() }) {
+                    IconButton(onClick = onNavigateUpClicked) {
                         Icon(
                             painter = painterResource(R.drawable.close_24px),
-                            stringResource(R.string.cd_close)
+                            contentDescription = stringResource(R.string.cd_close)
                         )
                     }
                 },
                 actions = {
-                    TextButton(onClick = { onSaveNewInstrumentClicked() }) {
+                    IconButton(onClick = onSettingsClicked) {
+                        Icon(
+                            painter = painterResource(R.drawable.settings_24px),
+                            contentDescription = stringResource(R.string.cd_settings)
+                        )
+                    }
+                    TextButton(
+                        onClick = onSaveClicked,
+                        enabled = name.isNotBlank()
+                    ) {
                         TextMMD(stringResource(id = R.string.save))
                     }
                 }
             )
-        },
-        snackbarHost = { SnackbarHostMMD(hostState = snackbarHostState) }
+        }
     ) { paddingValues ->
-        val configuration = LocalConfiguration.current
-        when (configuration.orientation) {
-            Configuration.ORIENTATION_LANDSCAPE -> {
-                InstrumentEditorLandscape(
-                    state = state,
-                    musicalScale = musicalScale,
-                    modifier = modifier.padding(paddingValues),
-                    notePrintOptions = notePrintOptions,
-                    tunerPlotStyle = tunerPlotStyle,
-                    onIconButtonClicked = onIconButtonClicked
-                )
-            }
-            else -> {
-                InstrumentEditorPortrait(
-                    state = state,
-                    musicalScale = musicalScale,
-                    modifier = modifier.padding(paddingValues),
-                    notePrintOptions = notePrintOptions,
-                    tunerPlotStyle = tunerPlotStyle,
-                    onIconButtonClicked = onIconButtonClicked
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun InstrumentEditorPortrait(
-    state: InstrumentEditorData,
-    musicalScale: MusicalScale2,
-    modifier: Modifier = Modifier,
-    notePrintOptions: NotePrintOptions2 = NotePrintOptions2(),
-    tunerPlotStyle: TunerPlotStyle = TunerPlotStyle.create(),
-    onIconButtonClicked: () -> Unit = {}
-) {
-    val icon by state.icon.collectAsStateWithLifecycle()
-    val name by state.name.collectAsStateWithLifecycle()
-    val strings by state.strings.collectAsStateWithLifecycle()
-    val selectedStringIndex by state.selectedStringIndex.collectAsStateWithLifecycle()
-    val initializerNote by state.initializerNote.collectAsStateWithLifecycle()
-    val selectedNoteWithInfo = strings.getOrNull(selectedStringIndex)
-    val selectedNoteKey = selectedNoteWithInfo?.key ?: 0
-    val selectedNote = selectedNoteWithInfo?.note ?: initializerNote
-    val noteSelectorPosition = remember(musicalScale, selectedNote) {
-        val noteIndices = musicalScale.getMatchingNoteIndices(selectedNote)
-        if (noteIndices.isEmpty())
-            -musicalScale.noteIndexBegin
-        else
-            noteIndices[0] - musicalScale.noteIndexBegin
-    }
-
-//    Log.v("Tuner", "InstrumentEditor: strings: $strings")
-    Column(modifier) {
-        TextFieldMMD(
-            value = name,
-            onValueChange = { state.setName(it) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(tunerPlotStyle.margin),
-            leadingIcon = {
-                IconButton(
-                    onClick = onIconButtonClicked,
-                    modifier = Modifier.width(60.dp)
-                ) {
-                    Icon(
-                        ImageVector.vectorResource(id = icon.resourceId),
-                        contentDescription = null,
-                        modifier = Modifier.size(36.dp)// .background(Color.Green)
-                    )
-                }
-            },
-            trailingIcon = {
-                IconButton(onClick = { state.setName("") }) {
-                    Icon(
-                        painter = painterResource(R.drawable.close_24px),
-                        contentDescription = stringResource(R.string.cd_clear)
-                    )
-                }
-            },
-            placeholder = {
-                TextMMD(stringResource(id = R.string.instrument_name))
-            },
-            singleLine = true
-        )
-
-        Strings(
-            strings = strings,
-            musicalScale = musicalScale,
-            notePrintOptions = notePrintOptions,
-            modifier = Modifier
-                .padding(
-                    start = tunerPlotStyle.margin,
-                    end = tunerPlotStyle.margin
-                )
-                .fillMaxWidth()
-                .weight(1f),
-
-            tuningState = TuningState.InTune,
-            highlightedNoteKey = selectedNoteKey,
-            defaultColor = tunerPlotStyle.stringColor,
-            onDefaultColor = tunerPlotStyle.onStringColor,
-            inTuneColor = MaterialTheme.colorScheme.primary,
-            onInTuneColor = MaterialTheme.colorScheme.onPrimary,
-            fontSize = tunerPlotStyle.stringFontStyle.fontSize,
-            sidebarPosition = StringsSidebarPosition.End,
-            outline = if (state.stringsState.scrollMode == StringsScrollMode.Manual)
-                tunerPlotStyle.plotWindowOutlineDuringGesture
-            else
-                tunerPlotStyle.plotWindowOutline,
-            state = state.stringsState,
-            onStringClicked = { key, _ ->
-                state.selectString(key)
-            }
-        )
-        Row(
-            modifier = Modifier
-                .padding(horizontal = tunerPlotStyle.margin)
-                .padding(top = tunerPlotStyle.margin - 4.dp)
-                .fillMaxWidth()
-        ) {
-            ButtonMMD(
-                onClick = { state.addNote() },
-                modifier = Modifier.weight(1f)
-            ) {
-                TextMMD(stringResource(id = R.string.add_note))
-            }
-
-            Spacer(modifier = Modifier.width(tunerPlotStyle.margin))
-
-            ButtonMMD(
-                onClick = { state.deleteNote() },
-                modifier = Modifier.weight(1f)
-            ) {
-                TextMMD(stringResource(id = R.string.delete_note))
-            }
-        }
-        NoteSelector(
-            selectedIndex = noteSelectorPosition,
-            musicalScale = musicalScale,
-            notePrintOptions = notePrintOptions,
-            modifier = Modifier.padding(top = tunerPlotStyle.margin - 4.dp),
-            fontSize = tunerPlotStyle.noteSelectorStyle.fontSize,
-            onIndexChanged = { state.modifySelectedString(musicalScale.getNote(it + musicalScale.noteIndexBegin)) }
-        )
-        HorizontalDividerMMD(
-            modifier = Modifier.padding(tunerPlotStyle.margin)
-        )
-        TextMMD(
-            stringResource(id = R.string.lately_detected_notes),
-            modifier = Modifier.padding(horizontal = tunerPlotStyle.margin),
-            style = MaterialTheme.typography.labelMedium
-        )
-
-        NoteDetector(
-            state = state.noteDetectorState,
-            musicalScale = musicalScale,
-            notePrintOptions = notePrintOptions,
-            textStyle = tunerPlotStyle.noteSelectorStyle,
-            textColor = MaterialTheme.colorScheme.primary,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    bottom = tunerPlotStyle.margin,
-                    start = tunerPlotStyle.margin,
-                    end = tunerPlotStyle.margin,
-                ),
-            onNoteClicked = { state.modifySelectedString(it) }
-        )
-    }
-}
-
-@Composable
-fun InstrumentEditorLandscape(
-    state: InstrumentEditorData,
-    musicalScale: MusicalScale2,
-    modifier: Modifier = Modifier,
-    notePrintOptions: NotePrintOptions2 = NotePrintOptions2(),
-    tunerPlotStyle: TunerPlotStyle = TunerPlotStyle.create(),
-    onIconButtonClicked: () -> Unit = {}
-) {
-    val icon by state.icon.collectAsStateWithLifecycle()
-    val name by state.name.collectAsStateWithLifecycle()
-    val strings by state.strings.collectAsStateWithLifecycle()
-    val selectedStringIndex by state.selectedStringIndex.collectAsStateWithLifecycle()
-    val initializerNote by state.initializerNote.collectAsStateWithLifecycle()
-    val selectedNoteWithInfo = strings.getOrNull(selectedStringIndex)
-    val selectedNoteKey = selectedNoteWithInfo?.key ?: 0
-    val selectedNote = selectedNoteWithInfo?.note ?: initializerNote
-    val noteSelectorPosition = remember(musicalScale, selectedNote) {
-        val noteIndices = musicalScale.getMatchingNoteIndices(selectedNote)
-        if (noteIndices.isEmpty())
-            -musicalScale.noteIndexBegin
-        else
-            noteIndices[0] - musicalScale.noteIndexBegin
-    }
-
-    Row(modifier) {
-        Column(
-            Modifier.weight(1f),
-            verticalArrangement = Arrangement.SpaceBetween
-        ) {
+        Column(Modifier.padding(paddingValues)) {
             TextFieldMMD(
                 value = name,
                 onValueChange = { state.setName(it) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(
-                        start = tunerPlotStyle.margin,
-                        top = tunerPlotStyle.margin
-                    ),
+                    .padding(16.dp),
                 leadingIcon = {
-                    IconButton(
-                        onClick = onIconButtonClicked,
-                        modifier = Modifier.width(60.dp)
-                    ) {
+                    IconButton(onClick = onIconClicked) {
                         Icon(
                             ImageVector.vectorResource(id = icon.resourceId),
                             contentDescription = null,
-                            modifier = Modifier.size(36.dp)// .background(Color.Green)
+                            modifier = Modifier
+                                .width(60.dp)
+                                .size(36.dp)
                         )
                     }
                 },
@@ -364,240 +115,17 @@ fun InstrumentEditorLandscape(
                         )
                     }
                 },
-                placeholder = {
-                    TextMMD(stringResource(id = R.string.instrument_name))
-                },
+                placeholder = { TextMMD(stringResource(id = R.string.instrument_name)) },
                 singleLine = true
             )
-
-            Spacer(Modifier.weight(1f))
-
-            Row(
-                modifier = Modifier
-                    .padding(
-                        top = tunerPlotStyle.margin - 4.dp,
-                        start = tunerPlotStyle.margin
-                    )
-                    .fillMaxWidth()
-            ) {
-                ButtonMMD(
-                    onClick = { state.addNote() },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    TextMMD(stringResource(id = R.string.add_note))
-                }
-
-                Spacer(modifier = Modifier.width(tunerPlotStyle.margin))
-
-                ButtonMMD(
-                    onClick = { state.deleteNote() },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    TextMMD(stringResource(id = R.string.delete_note))
-                }
-            }
-
-            Spacer(Modifier.weight(1f))
-
-            NoteSelector(
-                selectedIndex = noteSelectorPosition,
-                musicalScale = musicalScale,
+            InstrumentStringDiagram(
+                notes = notes,
                 notePrintOptions = notePrintOptions,
-                modifier = Modifier.padding(
-                    top = tunerPlotStyle.margin - 4.dp,
-                ),
-                fontSize = tunerPlotStyle.noteSelectorStyle.fontSize,
-                onIndexChanged = { state.modifySelectedString(musicalScale.getNote(it + musicalScale.noteIndexBegin)) }
-            )
-
-            Spacer(Modifier.weight(1f))
-
-            HorizontalDividerMMD(
-                modifier = Modifier.padding(
-                    top = tunerPlotStyle.margin,
-                    bottom = tunerPlotStyle.margin,
-                    start = tunerPlotStyle.margin
-                )
-            )
-
-            TextMMD(
-                stringResource(id = R.string.lately_detected_notes),
-                modifier = Modifier.padding(
-                    start = tunerPlotStyle.margin
-                ),
-                style = MaterialTheme.typography.labelMedium
-            )
-
-            NoteDetector(
-                state = state.noteDetectorState,
-                musicalScale = musicalScale,
-                notePrintOptions = notePrintOptions,
-                textStyle = tunerPlotStyle.noteSelectorStyle,
-                textColor = MaterialTheme.colorScheme.primary,
+                onNoteClicked = onStringClicked,
                 modifier = Modifier
+                    .weight(1f)
                     .fillMaxWidth()
-                    .padding(
-                        start = tunerPlotStyle.margin,
-                        bottom = tunerPlotStyle.margin
-                    ),
-                onNoteClicked = { state.modifySelectedString(it) }
             )
         }
-
-        Spacer(Modifier.width(tunerPlotStyle.margin))
-
-        Strings(
-            strings = strings,
-            musicalScale = musicalScale,
-            notePrintOptions = notePrintOptions,
-            modifier = Modifier
-                .padding(
-                    top = tunerPlotStyle.margin,
-                    bottom = tunerPlotStyle.margin,
-                    end = tunerPlotStyle.margin
-                )
-                .fillMaxHeight()
-                .weight(1f),
-
-            tuningState = TuningState.InTune,
-            highlightedNoteKey = selectedNoteKey,
-            defaultColor = tunerPlotStyle.stringColor,
-            onDefaultColor = tunerPlotStyle.onStringColor,
-            inTuneColor = MaterialTheme.colorScheme.primary,
-            onInTuneColor = MaterialTheme.colorScheme.onPrimary,
-            fontSize = tunerPlotStyle.stringFontStyle.fontSize,
-            sidebarPosition = StringsSidebarPosition.End,
-            outline = if (state.stringsState.scrollMode == StringsScrollMode.Manual)
-                tunerPlotStyle.plotWindowOutlineDuringGesture
-            else
-                tunerPlotStyle.plotWindowOutline,
-            state = state.stringsState,
-            onStringClicked = { key, _ ->
-                state.selectString(key)
-            }
-        )
-
-    }
-}
-
-private class InstrumentEditorDataTest : InstrumentEditorData {
-    val musicalScale = MusicalScale2.createTestEdo12()
-
-    override val icon = MutableStateFlow(InstrumentIcon.piano)
-    override val name = MutableStateFlow("Test name")
-
-    override var strings = MutableStateFlow(
-        persistentListOf(
-            StringWithInfo(musicalScale.getNote(0), 0)
-        )
-    )
-    override val stringsState = StringsState(0)
-
-    override var selectedStringIndex = MutableStateFlow(strings.value.size - 1)
-
-    override val noteDetectorState = NoteDetectorState()
-
-    override val initializerNote = MutableStateFlow(musicalScale.referenceNote)
-
-    override fun setIcon(icon: InstrumentIcon) {
-        this.icon.value = icon
-    }
-
-    override fun setName(name: String) {
-        this.name.value = name
-    }
-
-    override fun selectString(key: Int) {
-        val index = strings.value.indexOfFirst { it.key == key }
-        selectedStringIndex.value = index
-    }
-
-    override fun modifySelectedString(note: MusicalNote) {
-        val stringsValue = strings.value
-        val index = selectedStringIndex.value
-        if (index in stringsValue.indices) {
-            strings.value = stringsValue.mutate {
-                it[index] = stringsValue[index].copy(note = note)
-            }
-        } else {
-            initializerNote.value = note
-        }
-    }
-
-    override fun addNote() {
-        val stringsValue = strings.value
-        if (stringsValue.size == 0) {
-            strings.value = persistentListOf(StringWithInfo(initializerNote.value, 1))
-            selectedStringIndex.value = 0
-        } else {
-            val newKey = StringWithInfo.generateKey(existingList = stringsValue)
-            val note = stringsValue.getOrNull(selectedStringIndex.value)?.note ?: initializerNote.value
-            val insertionPosition = min(selectedStringIndex.value + 1, stringsValue.size)
-            strings.value = stringsValue.mutate {
-                it.add(insertionPosition, StringWithInfo(note, newKey))
-            }
-            selectedStringIndex.value = insertionPosition
-        }
-    }
-
-    override fun deleteNote() {
-        val stringsValue = strings.value
-        val index = selectedStringIndex.value
-        if (index in stringsValue.indices) {
-            strings.value = stringsValue.mutate {
-                it.removeAt(index)
-            }
-            selectedStringIndex.value = if (stringsValue.size <= 1)
-                0
-            else
-                index.coerceIn(0, stringsValue.size - 2)
-
-            if (stringsValue.size == 1)
-                initializerNote.value = stringsValue[0].note
-        }
-    }
-}
-
-@Preview(widthDp = 300, heightDp = 600, showBackground = true)
-@Composable
-private fun InstrumentEditorPreview() {
-    TunerTheme {
-        val state = remember {
-            InstrumentEditorDataTest()
-        }
-        LaunchedEffect(Unit) {
-            while (true) {
-                val note = state.musicalScale.getNote((0..8).random())
-                state.noteDetectorState.hitNote(note)
-                delay(1000)
-            }
-        }
-
-        InstrumentEditorPortrait(
-            state = state,
-            musicalScale = state.musicalScale
-        )
-    }
-}
-
-@Preview(widthDp = 600, heightDp = 300, showBackground = true)
-@Composable
-private fun InstrumentEditorLandscapePreview() {
-    TunerTheme {
-        val state = remember {
-            InstrumentEditorDataTest()
-        }
-        LaunchedEffect(Unit) {
-            while (true) {
-                val note = state.musicalScale.getNote((0..8).random())
-                state.noteDetectorState.hitNote(note)
-                delay(1000)
-            }
-        }
-
-        InstrumentEditorLandscape(
-            state = state,
-            musicalScale = state.musicalScale
-        )
     }
 }

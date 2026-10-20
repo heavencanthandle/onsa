@@ -63,7 +63,7 @@ val banjoTunings: List<Instrument> = listOf(
         note(BaseNote.G, 4),
         note(BaseNote.D, 3),
         note(BaseNote.G, 3),
-        note(BaseNote.B, 3, NoteModifier.Flat),
+        blackKey(BaseNote.A, 3, BaseNote.B),
         note(BaseNote.D, 4),
     )),
     tuning(2, "Sawmill", R.string.banjo_sawmill, arrayOf(
@@ -99,12 +99,12 @@ val banjoTunings: List<Instrument> = listOf(
         note(BaseNote.C, 3),
         note(BaseNote.G, 3),
         note(BaseNote.C, 4),
-        note(BaseNote.E, 4, NoteModifier.Flat),
+        blackKey(BaseNote.D, 4, BaseNote.E),
     )),
     tuning(7, "Open D", R.string.banjo_open_d, arrayOf(
-        note(BaseNote.F, 4, NoteModifier.Sharp),
+        blackKey(BaseNote.F, 4, BaseNote.G),
         note(BaseNote.D, 3),
-        note(BaseNote.F, 3, NoteModifier.Sharp),
+        blackKey(BaseNote.F, 3, BaseNote.G),
         note(BaseNote.A, 3),
         note(BaseNote.D, 4),
     )),
@@ -126,7 +126,7 @@ val banjoTunings: List<Instrument> = listOf(
         note(BaseNote.A, 4),
         note(BaseNote.E, 3),
         note(BaseNote.A, 3),
-        note(BaseNote.C, 4, NoteModifier.Sharp),
+        blackKey(BaseNote.C, 4, BaseNote.D),
         note(BaseNote.E, 4),
     )),
 )
@@ -151,6 +151,19 @@ private fun note(
     octave: Int,
     modifier: NoteModifier = NoteModifier.None
 ): MusicalNote = MusicalNote(base = base, modifier = modifier, octave = octave)
+
+/** A black key as the scale stores it: the sharp, with its flat as the enharmonic. */
+private fun blackKey(
+    base: BaseNote,
+    octave: Int,
+    enharmonicBase: BaseNote
+): MusicalNote = MusicalNote(
+    base = base,
+    modifier = NoteModifier.Sharp,
+    octave = octave,
+    enharmonicBase = enharmonicBase,
+    enharmonicModifier = NoteModifier.Flat
+)
 
 /** A blank custom tuning, starting from Open G, ready for the editor. */
 fun newBanjoTuningDraft(): Instrument {

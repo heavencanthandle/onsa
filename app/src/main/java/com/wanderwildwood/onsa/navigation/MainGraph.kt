@@ -160,20 +160,20 @@ fun NavGraphBuilder.mainGraph(
                     controller.navigateUp()
                 }
             },
-            onEditInstrumentClicked = { instrument, copy ->
-                val newInstrument = if (copy) {
+            onEditInstrumentClicked = { instrument, asNew ->
+                val draft = if (asNew) {
                     instrument.copy(
                         nameResource = null,
-                        name = context.getString(R.string.copy_extension, instrument.getNameString(context)),
+                        name = context.getString(
+                            R.string.copy_extension,
+                            instrument.getNameString(context)
+                        ),
                         stableId = Instrument.NO_STABLE_ID
                     )
                 } else {
-                    instrument.copy(
-                        nameResource = null,
-                        name = instrument.getNameString(context)
-                    )
+                    instrument
                 }
-                controller.navigate(InstrumentEditorGraphRoute.create(newInstrument))
+                controller.navigate(InstrumentEditorGraphRoute.create(draft))
             },
             onCreateNewInstrumentClicked = {
                 val newInstrument = Instrument(

@@ -64,6 +64,7 @@ import com.wanderwildwood.onsa.musicalscale.MusicalScale2
 import com.wanderwildwood.onsa.notenames.MusicalNote
 import com.wanderwildwood.onsa.ui.notes.Note
 import com.wanderwildwood.onsa.ui.notes.NotePrintOptions2
+import com.wanderwildwood.onsa.ui.notes.NoteWithEnharmonic
 import com.wanderwildwood.onsa.viewmodels.BanjoTuningEditorViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -74,6 +75,7 @@ fun BanjoTuningEditor(
     onNavigateUpClicked: () -> Unit,
     onSaveClicked: () -> Unit,
     onStringClicked: (Int) -> Unit,
+    onSettingsClicked: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val name by state.name.collectAsStateWithLifecycle()
@@ -92,6 +94,12 @@ fun BanjoTuningEditor(
                     }
                 },
                 actions = {
+                    IconButton(onClick = onSettingsClicked) {
+                        Icon(
+                            painter = painterResource(R.drawable.settings_24px),
+                            contentDescription = stringResource(R.string.cd_settings)
+                        )
+                    }
                     TextButton(
                         onClick = onSaveClicked,
                         enabled = name.isNotBlank()
@@ -129,7 +137,7 @@ fun BanjoTuningEditor(
                 placeholder = { TextMMD(stringResource(id = R.string.instrument_name)) },
                 singleLine = true
             )
-            BanjoStringDiagram(
+            InstrumentStringDiagram(
                 notes = notes,
                 notePrintOptions = notePrintOptions,
                 onNoteClicked = onStringClicked,
@@ -142,7 +150,7 @@ fun BanjoTuningEditor(
 }
 
 @Composable
-private fun BanjoStringDiagram(
+fun InstrumentStringDiagram(
     notes: List<MusicalNote>,
     notePrintOptions: NotePrintOptions2,
     onNoteClicked: (Int) -> Unit,
@@ -161,6 +169,11 @@ private fun BanjoStringDiagram(
         val noteHeight = 48.dp
         val travel = (maxHeight - labelHeight - noteHeight - 8.dp).coerceAtLeast(0.dp)
         val columnWidth = maxWidth / notes.size
+        val noteFont = when {
+            notes.size >= 8 -> 14.sp
+            notes.size >= 6 -> 16.sp
+            else -> 20.sp
+        }
         notes.forEachIndexed { index, note ->
             val fraction = if (highest == lowest) {
                 0.5f
@@ -194,7 +207,7 @@ private fun BanjoStringDiagram(
                         musicalNote = note,
                         notePrintOptions = notePrintOptions,
                         withOctave = true,
-                        fontSize = 20.sp
+                        fontSize = noteFont
                     )
                 }
                 TextMMD(
@@ -216,9 +229,10 @@ fun BanjoNotePicker(
     onNoteClicked: (MusicalNote) -> Unit,
     onConfirmClicked: () -> Unit,
     onNavigateUpClicked: () -> Unit,
+    octaveRange: IntRange = 0..7,
     modifier: Modifier = Modifier,
 ) {
-    val notes = selectableNotes(scale, pendingNote)
+    val notes = selectableNotes(scale, pendingNote, octaveRange)
     val listState = rememberLazyListState()
     val selectedIndex = notes.indexOfFirst { it.match(pendingNote) }
     LaunchedEffect(selectedIndex) {
@@ -276,7 +290,7 @@ fun BanjoNotePicker(
                             )
                             .padding(horizontal = 18.dp, vertical = 10.dp)
                     ) {
-                        Note(
+                        NoteWithEnharmonic(
                             musicalNote = note,
                             notePrintOptions = notePrintOptions,
                             withOctave = true,
@@ -289,10 +303,14 @@ fun BanjoNotePicker(
     }
 }
 
-private fun selectableNotes(scale: MusicalScale2, current: MusicalNote): List<MusicalNote> {
+private fun selectableNotes(
+    scale: MusicalScale2,
+    current: MusicalNote,
+    octaveRange: IntRange
+): List<MusicalNote> {
     val fromScale = (scale.noteIndexBegin until scale.noteIndexEnd)
         .map { scale.getNote(it) }
-        .filter { it.octave in 2..5 }
+        .filter { it.octave in octaveRange }
     val notes = if (fromScale.any { it.match(current) }) fromScale else fromScale + current
     return notes.sortedBy { it.chromaticPitch() }
 }

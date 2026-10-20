@@ -19,160 +19,89 @@
 package com.wanderwildwood.onsa.viewmodels
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import com.wanderwildwood.onsa.instruments.Instrument
 import com.wanderwildwood.onsa.instruments.InstrumentIcon
-import com.wanderwildwood.onsa.instruments.instrumentChromatic
-import com.wanderwildwood.onsa.notedetection.FrequencyDetectionCollectedResults
-import com.wanderwildwood.onsa.notedetection.FrequencyEvaluationResult
-import com.wanderwildwood.onsa.preferences.PreferenceResources
+import com.wanderwildwood.onsa.instruments.withHighString
+import com.wanderwildwood.onsa.instruments.withLowString
+import com.wanderwildwood.onsa.instruments.withStringRemoved
+import com.wanderwildwood.onsa.notenames.BaseNote
 import com.wanderwildwood.onsa.notenames.MusicalNote
-import com.wanderwildwood.onsa.temperaments.TemperamentResources
-import com.wanderwildwood.onsa.tuner.Tuner
-import com.wanderwildwood.onsa.ui.instruments.StringWithInfo
-import com.wanderwildwood.onsa.ui.instruments.StringsState
-import com.wanderwildwood.onsa.ui.notes.NoteDetectorState
-import com.wanderwildwood.onsa.ui.instruments.InstrumentEditorData
-import kotlinx.collections.immutable.mutate
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toPersistentList
+import com.wanderwildwood.onsa.notenames.NoteModifier
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlin.math.min
 
 @HiltViewModel(assistedFactory = InstrumentEditorViewModel.Factory::class)
 class InstrumentEditorViewModel @AssistedInject constructor(
-    @Assisted instrument: Instrument,
-    pref: PreferenceResources,
-    private val temperaments: TemperamentResources
-) : ViewModel(), InstrumentEditorData {
-     @AssistedFactory
-     interface Factory {
-         fun create(instrument: Instrument): InstrumentEditorViewModel
-     }
+    @Assisted instrument: Instrument
+) : ViewModel() {
+    @AssistedFactory
+    interface Factory {
+        fun create(instrument: Instrument): InstrumentEditorViewModel
+    }
 
-    val musicalScale get() = temperaments.musicalScale
-    private var stableId = instrument.stableId
+    private val stableId = instrument.stableId
+    private val originalName = instrument.getNameString(null).trim()
 
-    override val icon = MutableStateFlow(instrument.icon)
-    override val name = MutableStateFlow(instrument.getNameString(null))
+    val icon = MutableStateFlow(instrument.icon)
+    val name = MutableStateFlow(originalName)
+    val strings = MutableStateFlow(instrument.strings.toList())
 
-    override val strings = MutableStateFlow(
-        instrument.strings.mapIndexed { index, string ->
-            StringWithInfo(string, index)
-        }.toPersistentList()
+    private var editingStringIndex: Int = 0
+    val pendingNote = MutableStateFlow(
+        instrument.strings.firstOrNull() ?: MusicalNote(BaseNote.A, NoteModifier.None, 4)
     )
-    override val stringsState = StringsState(strings.value.size - 1)
 
-    override var selectedStringIndex = MutableStateFlow(strings.value.size - 1)
-
-    override val noteDetectorState = NoteDetectorState()
-
-    override val initializerNote = MutableStateFlow(musicalScale.value.referenceNote)
-
-    override fun setIcon(icon: InstrumentIcon) {
+    fun setIcon(icon: InstrumentIcon) {
         this.icon.value = icon
     }
 
-    override fun setName(name: String) {
-        this.name.value = name
+    fun setName(value: String) {
+        name.value = value
     }
 
-    override fun selectString(key: Int) {
-        val index = strings.value.indexOfFirst { it.key == key }
-        selectedStringIndex.value = index
+    fun beginEditingString(index: Int) {
+        editingStringIndex = index
+        strings.value.getOrNull(index)?.let { pendingNote.value = it }
     }
 
-    override fun modifySelectedString(note: MusicalNote) {
-        val stringsValue = strings.value
-        val index = selectedStringIndex.value
-        if (index in stringsValue.indices) {
-            strings.value = stringsValue.mutate {
-                it[index] = stringsValue[index].copy(note = note)
-            }
-        } else {
-            initializerNote.value = note
-        }
+    fun setPendingNote(note: MusicalNote) {
+        pendingNote.value = note
     }
 
-    override fun addNote() {
-        val stringsValue = strings.value
-        if (stringsValue.size == 0) {
-            strings.value = persistentListOf(StringWithInfo(initializerNote.value, 1))
-            selectedStringIndex.value = 0
-        } else {
-            val newKey = StringWithInfo.generateKey(existingList = stringsValue)
-            val note = stringsValue.getOrNull(selectedStringIndex.value)?.note ?: initializerNote.value
-            val insertionPosition = min(selectedStringIndex.value + 1, stringsValue.size)
-            strings.value = stringsValue.mutate {
-                it.add(insertionPosition, StringWithInfo(note, newKey))
-            }
-            selectedStringIndex.value = insertionPosition
-        }
+    fun confirmPendingNote() {
+        val current = strings.value
+        if (editingStringIndex !in current.indices) return
+        strings.value = current.toMutableList().also { it[editingStringIndex] = pendingNote.value }
     }
 
-    override fun deleteNote() {
-        val stringsValue = strings.value
-        val index = selectedStringIndex.value
-        if (index in stringsValue.indices) {
-            strings.value = stringsValue.mutate {
-                it.removeAt(index)
-            }
-            selectedStringIndex.value = if (stringsValue.size <= 1)
-                0
-            else
-                index.coerceIn(0, stringsValue.size - 2)
-
-            if (stringsValue.size == 1)
-                initializerNote.value = stringsValue[0].note
-        }
+    fun addHighString() {
+        strings.value = strings.value.withHighString()
     }
 
-    private val instrumentChromaticFlow = MutableStateFlow(instrumentChromatic)
-    private val tuner = Tuner(
-        pref,
-        instrumentChromaticFlow,
-        musicalScale,
-        viewModelScope,
-        onResultAvailableListener = object : Tuner.OnResultAvailableListener {
-            override fun onFrequencyDetected(result: FrequencyDetectionCollectedResults) {}
+    fun addLowString() {
+        strings.value = strings.value.withLowString()
+    }
 
-            override fun onFrequencyEvaluated(result: FrequencyEvaluationResult) {
-                result.target?.let { tuningTarget ->
-                    noteDetectorState.hitNote(tuningTarget.note)
-                }
-            }
-        }
-    )
+    fun deleteString(index: Int) {
+        strings.value = strings.value.withStringRemoved(index)
+    }
 
-//    private fun setInstrument(instrument: Instrument) {
-//        setIcon(instrument.iconResource)
-//        setName(instrument.getNameString2(null))
-//        strings.value = instrument.strings.mapIndexed { index, string ->
-//            StringWithInfo(string, index)
-//        }.toPersistentList()
-//        selectString(instrument.strings.size - 1) // key of last string
-//        stableId = instrument.stableId
-//    }
-
-    fun getInstrument(): Instrument {
+    fun toInstrument(): Instrument {
+        val trimmed = name.value.trim()
+        // A renamed instrument is a new one. The one it was copied from stays.
+        val id = if (stableId == Instrument.NO_STABLE_ID || trimmed != originalName)
+            Instrument.NO_STABLE_ID
+        else
+            stableId
         return Instrument(
-            name = this.name.value,
+            name = trimmed,
             nameResource = null,
-            strings = strings.value.map{ it.note }.toTypedArray(),
+            strings = strings.value.toTypedArray(),
             icon = icon.value,
-            stableId = stableId,
-            isChromatic = false
+            stableId = id
         )
-    }
-
-    fun startTuner() {
-        tuner.connect()
-    }
-    fun stopTuner() {
-        tuner.disconnect()
     }
 }

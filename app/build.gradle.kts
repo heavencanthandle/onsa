@@ -14,10 +14,12 @@ android {
 
     defaultConfig {
         applicationId = "com.wanderwildwood.onsa"
+        // Every build of this fork sits beside Wander's Tuner rather than replacing it.
+        applicationIdSuffix = ".tuner"
         minSdk = 23
         targetSdk = 36
-        versionCode = 16
-        versionName = "0.1.15"
+        versionCode = 17
+        versionName = "0.1.16"
         testInstrumentationRunner =  "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
     }

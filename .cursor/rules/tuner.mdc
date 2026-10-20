@@ -1,0 +1,14 @@
+---
+description: Constraints a new agent will not find in the README
+alwaysApply: true
+---
+
+Read AGENTS.md. Do not restate the README.
+
+- Do not treat `match()` or `hasMatchingNote()` as a string having a pitch. The tuner resolves a string with `getNoteIndex2`, which compares the whole pair in order. A flat written alone, or a pair with the flat first, is a miss. `Int.MAX_VALUE` from that call means the note is not in the scale.
+- Do not save a banjo tuning through `addNewOrReplaceInstrument`. Custom banjo tunings are their own preference, not the custom-instrument list. Do not read that preference from the current-instrument load check; it is created later.
+- Do not insert an `InstrumentIcon` before `guitar`. A new instrument uses `entries[0]`.
+- Do not remove the `.tuner` application-id suffix (set in `defaultConfig`, so debug and release both install as `com.wanderwildwood.onsa.tuner` beside Wander's Tuner), and do not rename the namespace to follow it. Releases are signed with the key in `signing/` (gitignored). Do not hardcode the file-provider authority; shares pass the application id.
+- Do not put "(copy)" on a banjo tuning taken from a built-in, and do not drop that suffix from a built-in copied on the instrument list.
+- Do not add a high string by pitch or at the left. High appends, low prepends, and the rightmost label is string 1. Do not delete the last string; an empty string list is the chromatic instrument.
+- Do not edit `ic_launcher` to change the home icon. The launcher uses `ic_launcher_mudita`, and the upside-down fork is that drawable's rotation.
